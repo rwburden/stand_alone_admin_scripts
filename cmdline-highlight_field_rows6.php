@@ -51,6 +51,7 @@ to be moved to a different field table, because it is not yet known whether they
 
 
 $ftl = array (6=>'authors',3=>'lead_item',2=>'content_type',7=>'media_type',5=>'campaign',4=>'categories',1=>'tags');
+$deltas = array();
 
 $rows_output = 0;
 
@@ -99,14 +100,31 @@ function find_row_in_other_field_table($row,$d_or_r)
 
 function get_max_delta_plus_one($table_name,$entity_id)
 {
+	global $deltas;
+	#save the results of previous queries in the $deltas array.  If the query has run before, 
+	#get the result from the $deltas array, not the DB, because this script does not increment
+	#the value in the DB.
+	#We therefore need to increment the delta value for each new SQL command that this script
+	#generates for the same table and entity_id.  The value obtained from 
+	#the DB is only our starting point for each table and entity_id.
+	if (isset($deltas[$table_name][$entity_id]))
+	{
+		$deltas[$table_name][$entity_id]++;
+		return $deltas[$table_name][$entity_id];
+	}
 	$sql = "select max(delta) as m from ".$table_name." where entity_id = ".$entity_id;
 	global $pdo;
 	$statement = $pdo->query($sql);
 	$max_delta = 0;
 	$row = $statement->fetch(PDO::FETCH_ASSOC);
 	$max_delta = $row['m'];
-    if (is_null($max_delta)) {return 0;}  /* if entity_id not found, return 0 */
+    if (is_null($max_delta)) 
+	{
+		$deltas[$table_name][$entity_id] = 0;
+		return 0;
+	}  /* if entity_id not found, return 0 */
 	$max_delta++;
+	$deltas[$table_name][$entity_id] = $max_delta;
 	return $max_delta;
 }
 
@@ -264,9 +282,10 @@ foreach ($rows_to_move as $mrow)
 	" and field_".$value."_tid = ".$mrow['term_id'].";</p>\n","repair_sql");
 	
 	$new_table_name = get_field_table_name($mrow['vocab_id'],$d_or_r);
+	$new_value = get_tid_field_name ($mrow['vocab_id']);
 	$delta = get_max_delta_plus_one($new_table_name,$mrow['entity_id']);
 	
-	print_filter( "<p>insert into ".$new_table_name." (bundle,deleted,delta,entity_id,entity_type,field_".$value."_tid,language,revision_id) values (\"".$mrow['bundle']."\",". $mrow['deleted'].",".$delta.",".$mrow['entity_id'].",\"".$mrow['entity_type']."\",".$mrow['term_id'].",\"".$mrow['language']."\",".$mrow['revision_id'].");</p>","repair_sql");
+	print_filter( "<p>insert into ".$new_table_name." (bundle,deleted,delta,entity_id,entity_type,field_".$new_value."_tid,language,revision_id) values (\"".$mrow['bundle']."\",". $mrow['deleted'].",".$delta.",".$mrow['entity_id'].",\"".$mrow['entity_type']."\",".$mrow['term_id'].",\"".$mrow['language']."\",".$mrow['revision_id'].");</p>","repair_sql");
 } 
 
 foreach ($rows_to_delete as $drow)
@@ -289,5 +308,5 @@ foreach ($rows_to_delete as $drow)
 	" and field_".$value."_tid = ".$drow['term_id'].";</p>\n","repair_sql");
 } 
 }
-print "<p><strong>Rows output:</strong> ".$rows_output."</p>\n";
+print_filter ("<p><strong>Rows output:</strong> ".$rows_output."</p>\n","");
 ?>
