@@ -1,0 +1,5 @@
+WHen content on the site is unpublished, its taxonomy terms are removed from taxonomy_index, but remain in the field tables.  Consequences: unpublished nodes do not appear when filtered by taxonomy term.  To see unpublished content, all taxonomy term filters must be removed.  When the same content is published, its terms are restored to taxonomy_index.
+
+Thus, after I unpublished the English content, I could no longer select it in admin/content by applying taxononmy term = English.  It is only possible to select among unpublished nodes by other criteria, such as the title or the content type.
+
+The taxonomy term "English" appears in two vocabularies: text content type and media content type (not to be confused with the content type, which is Article/Media Content/Basic Page/Package/Panel, i.e. the content type determines what form is used to submit the content, while the "text content type" and "media content type" taxonomy terms are among the checkboxes that appear in the forms.
